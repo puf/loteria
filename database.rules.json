@@ -66,6 +66,23 @@
         ".write": "auth != null && auth.uid === $uid",
         ".validate": "newData.val() === true"
       }
+    },
+
+    // implementation-plan.md: "write `false` to `admins/<uid>` [so] a
+    // person then grants `isAdmin` via the bootstrap script" -- a
+    // discoverability aid, written by the *not-yet-admin* host/rc.html
+    // user themselves (host/rc.html's registerForDiscovery), so an
+    // existing admin can copy/paste their UID for
+    // grant_admin_claim.mjs. Only lets a signed-in user create their own
+    // entry, and only as `false` -- never overwrite an existing entry
+    // (matches the client's own `!existing.exists()` guard, enforced here
+    // too) and never write `true` (the real grant is always the custom
+    // claim, set independently by the bootstrap script, never through
+    // this path).
+    "admins": {
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.val() === false"
+      }
     }
   }
 }
