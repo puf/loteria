@@ -1,0 +1,11 @@
+import { getApps, initializeApp } from 'firebase-admin/app';
+import { getDatabase } from 'firebase-admin/database';
+const PROJECT_ID = 'lalotteria';
+const DATABASE_URL = 'https://lalotteria-default-rtdb.firebaseio.com';
+if (getApps().length === 0) initializeApp({ projectId: PROJECT_ID, databaseURL: DATABASE_URL });
+const db = getDatabase();
+console.log('game_state:', (await db.ref('game_state').get()).val());
+console.log('game:', JSON.stringify((await db.ref('game').get()).val()));
+console.log('players:', JSON.stringify((await db.ref('players').get()).val()));
+console.log('lobby:', JSON.stringify((await db.ref('lobby').get()).val()));
+process.exit(0);

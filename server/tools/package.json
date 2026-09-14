@@ -1,0 +1,9 @@
+{
+  "name": "loteria-admin-tools",
+  "private": true,
+  "type": "module",
+  "description": "One-off Firebase Admin SDK scripts for the Loteria stage/admin app. Not part of the Flutter app itself.",
+  "dependencies": {
+    "firebase-admin": "^13.0.0"
+  }
+}

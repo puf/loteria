@@ -1,0 +1,19 @@
+# Python venv used by grab.py.
+bin/
+include/
+lib/
+pyvenv.cfg
+__pycache__/
+.DS_Store
+
+# grab.py's raw capture of every network response from Google's "Celebrating
+# Loteria" Doodle (https://doodles.google/doodle/celebrating-loteria/), plus
+# the card-sheet screenshots below -- not ours to redistribute, so excluded
+# from the public repo. The specific files each app actually uses are
+# separately copied into player/assets/ and server/assets/ (also gitignored,
+# same reason) -- see grab.py to regenerate them locally.
+loteria_assets/
+set1.png
+set2.png
+set3.png
+set4.png

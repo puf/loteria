@@ -1,0 +1,7 @@
+# Card art sourced from Google's "Celebrating Loteria" Doodle -- not ours to
+# redistribute, so excluded from the public repo (see assets/grab.py at the
+# repo root to regenerate). Without these, the app won't build.
+cards.mp3
+cta.png
+initial-sprite.png
+cards-sprite.png

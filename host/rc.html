@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Loteria Host</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #14171c;
+    color: #eee;
+    padding: 16px;
+    padding-bottom: 48px;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .hint { color: #888; font-size: 13px; margin: 0 0 16px; }
+
+  #authGate, #console { display: none; }
+
+  .panel {
+    background: #1e2229;
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 15px; }
+  .row .label { color: #999; }
+  .row .value { font-weight: 600; }
+
+  .next-step {
+    background: #2a2f38;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: #ffd479;
+    margin-top: 8px;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  button.action {
+    font-size: 17px;
+    font-weight: 600;
+    padding: 18px 8px;
+    border-radius: 10px;
+    border: none;
+    background: #3a7bd5;
+    color: white;
+    cursor: pointer;
+  }
+  button.action:disabled {
+    background: #2a2d33;
+    color: #666;
+    cursor: default;
+  }
+  button.action.wide { grid-column: 1 / -1; }
+
+  #uid { color: #888; font-size: 12px; word-break: break-all; }
+
+  .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; font-size: 15px; }
+  .settings-row + .settings-row { border-top: 1px solid #2a2d33; }
+  .settings-row .label { color: #ccc; }
+  .settings-row .hint2 { color: #777; font-size: 12px; display: block; }
+  .settings-row input[type="number"] {
+    width: 90px;
+    font-size: 15px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: #14171c;
+    color: #eee;
+  }
+  .switch { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .slider {
+    position: absolute; inset: 0; background: #444; border-radius: 999px;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .switch .slider::before {
+    content: ""; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px;
+    background: white; border-radius: 50%; transition: transform 0.15s;
+  }
+  .switch input:checked + .slider { background: #3a7bd5; }
+  .switch input:checked + .slider::before { transform: translateX(18px); }
+
+  #authGate .box {
+    max-width: 420px;
+    margin: 60px auto 0;
+    text-align: center;
+  }
+  #authGate .uidBox {
+    background: #1e2229;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 16px 0;
+    font-size: 13px;
+    word-break: break-all;
+    color: #ccc;
+  }
+  #authGate button {
+    font-size: 15px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid #555;
+    background: #1e2229;
+    color: #eee;
+    cursor: pointer;
+  }
+  #statusLine { color: #888; font-size: 14px; }
+</style>
+</head>
+<body>
+  <h1>Loteria Host</h1>
+  <p class="hint">Remote control -- reads live game state, sends host actions. Not shown to players.</p>
+
+  <p id="statusLine">Connecting...</p>
+
+  <div id="authGate">
+    <div class="box">
+      <p>This browser does not have admin access.</p>
+      <div class="uidBox">UID: <span id="authUid"></span></div>
+      <p class="hint">Ask an existing admin to run<br><code>server/tools/grant_admin_claim.mjs --uid=&lt;the UID above&gt;</code></p>
+      <button id="recheckBtn">Recheck admin access</button>
+    </div>
+  </div>
+
+  <div id="console">
+    <div class="panel">
+      <div class="row"><span class="label">game_state</span><span class="value" id="gameState">-</span></div>
+      <div class="row"><span class="label">Lobby</span><span class="value" id="lobbyCount">-</span></div>
+      <div class="row"><span class="label">Dealt</span><span class="value" id="dealtCount">-</span></div>
+      <div class="row"><span class="label">Claimant</span><span class="value" id="claimant">-</span></div>
+      <div class="row"><span class="label">Draw count</span><span class="value" id="drawCount">-</span></div>
+      <div class="row"><span class="label">Pattern</span><span class="value" id="pattern">-</span></div>
+      <div class="next-step" id="nextStep"></div>
+    </div>
+
+    <div class="actions">
+      <button class="action wide" id="btn_next_game">next_game</button>
+      <button class="action" id="btn_start_drawing">start_drawing</button>
+      <button class="action" id="btn_pause">pause</button>
+      <button class="action" id="btn_resume">resume</button>
+      <button class="action" id="btn_check">check</button>
+      <button class="action wide" id="btn_resolve">resolve</button>
+    </div>
+
+    <div class="panel">
+      <div class="settings-row">
+        <span class="label">Sound<span class="hint2">Card-name audio on the stage</span></span>
+        <label class="switch">
+          <input type="checkbox" id="setting_sound" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="settings-row">
+        <span class="label">Max players<span class="hint2">Copied from lobby into a new round</span></span>
+        <input type="number" id="setting_max_player_count" min="1" step="1">
+      </div>
+      <div class="settings-row">
+        <span class="label">Draw interval (ms)<span class="hint2">Pace between card draws</span></span>
+        <input type="number" id="setting_draw_interval" min="500" step="500">
+      </div>
+    </div>
+
+    <p id="uid"></p>
+  </div>
+
+  <script type="module">
+    // Loteria host / remote-control app (implementation-plan.md "Host view /
+    // Remote control app scaffold"). Plain JS, no build step, no framework --
+    // this app is not authoritative: it only reads Firebase state and writes
+    // one-shot host actions to `/actions/<pushid>`. No local game-logic state
+    // beyond transient UI wiring (implementation-plan.md's own "Local-only
+    // state" contract for this app).
+    //
+    // Single file, inlined script and all -- deploy this one file to the
+    // Firebase Hosting root and it works standalone at e.g. `/rc.html`
+    // (or `/rc` with a `cleanUrls`/rewrite pointing at this file), no
+    // separate JS file to keep in sync or copy alongside it.
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import {
+      getAuth,
+      signInAnonymously,
+      getIdTokenResult,
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import {
+      getDatabase,
+      ref,
+      get,
+      set,
+      onValue,
+      push,
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
+    // Same Firebase web app config as the player/server apps (server/lib/firebase_options.dart).
+    const firebaseConfig = {
+      apiKey: "AIzaSyBcn1iDxE_2_Cnzy0_o6p27qxZS8sFD89Y",
+      appId: "1:863669381957:web:f58a56f05c95f7357e2c2c",
+      messagingSenderId: "863669381957",
+      projectId: "lalotteria",
+      authDomain: "lalotteria.firebaseapp.com",
+      databaseURL: "https://lalotteria-default-rtdb.firebaseio.com",
+      storageBucket: "lalotteria.firebasestorage.app",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    const $ = (id) => document.getElementById(id);
+
+    const ACTIONS = ["next_game", "start_drawing", "pause", "resume", "check", "resolve"];
+
+    // Which actions are valid to send in each `game_state` -- mirrors
+    // implementation-plan.md's "Remote control action contract" /
+    // admin_engine.dart's own validation (the admin process re-validates
+    // regardless; this is just so the host isn't offered obviously-wrong
+    // buttons). `next_game` is valid in every state: `AdminEngine` treats it as
+    // "start the round" from `lobby` and as a universal "abort back to lobby"
+    // bail-out from anywhere else.
+    function isActionEnabled(action, gameState) {
+      switch (action) {
+        case "next_game":
+          return true;
+        case "start_drawing":
+          return gameState === "dealing";
+        case "pause":
+          return gameState === "drawing";
+        case "resume":
+          return gameState === "paused";
+        case "check":
+          return gameState === "claiming";
+        case "resolve":
+          return gameState === "checking";
+        default:
+          return false;
+      }
+    }
+
+    const NEXT_STEP = {
+      lobby: "Players are joining. Click next_game to deal tablas and start the round.",
+      dealing: "Dealing tablas. Click start_drawing once every player has one.",
+      drawing: "Drawing cards. pause/resume to gate the cadence.",
+      paused: "Paused. Click resume to continue drawing.",
+      claiming: "A player claimed loteria. Click check to move to verification.",
+      checking: "Tell the claimant to hold up their phone, then click resolve.",
+      cheater: "False claim -- the stage is running its countdown automatically.",
+      winner: "Winner! The stage is moving to celebrate automatically.",
+      celebrate: "Round over. Click next_game to return to the lobby.",
+    };
+
+    // Tracked so `sendAction` can decide whether `next_game` would abort an
+    // in-progress round (anything but lobby/celebrate) and needs confirming.
+    let currentGameState = "lobby";
+
+    function sendAction(name) {
+      if (name === "next_game" && currentGameState !== "lobby" && currentGameState !== "celebrate") {
+        const confirmed = confirm(
+          `A round is in progress (${currentGameState}). next_game will abort it and return everyone to the lobby. Continue?`
+        );
+        if (!confirmed) return;
+      }
+      push(ref(db, "actions"), name);
+    }
+
+    function renderActionButtons(gameState) {
+      for (const action of ACTIONS) {
+        $(`btn_${action}`).disabled = !isActionEnabled(action, gameState);
+      }
+    }
+
+    function watchGameState() {
+      onValue(ref(db, "game_state"), (snap) => {
+        const state = snap.val() ?? "lobby";
+        currentGameState = state;
+        $("gameState").textContent = state;
+        $("nextStep").textContent = NEXT_STEP[state] ?? "";
+        renderActionButtons(state);
+      });
+
+      onValue(ref(db, "game"), (snap) => {
+        const game = snap.val() ?? {};
+        $("claimant").textContent = game.claiming_uid || "none";
+        $("drawCount").textContent = game.draw_count ?? "-";
+        $("pattern").textContent = game.winning_pattern
+          ? String(game.winning_pattern).replaceAll("_", " ")
+          : "-";
+      });
+
+      onValue(ref(db, "lobby"), (snap) => {
+        const lobby = snap.val();
+        $("lobbyCount").textContent = lobby ? Object.keys(lobby).length : 0;
+      });
+
+      onValue(ref(db, "players"), (snap) => {
+        const players = snap.val();
+        $("dealtCount").textContent = players ? Object.keys(players).length : 0;
+      });
+    }
+
+    // implementation-plan.md v2 TODO: settings, stored at `settings/*`,
+    // set here and read by the stage app (defaults match its own
+    // fallbacks: sound "on", max_player_count 1000, draw_interval 5000ms).
+    // Written directly (not via `/actions`) since these are configuration,
+    // not one-shot state-machine triggers.
+    //
+    // Skips overwriting a field the host is actively editing, so a live
+    // update from Firebase doesn't yank a value out from under an in-
+    // progress edit; each input then writes back on `change` (blur, or an
+    // immediate toggle for the checkbox).
+    function watchSettings() {
+      const isEditing = (el) => document.activeElement === el;
+
+      onValue(ref(db, "settings/sound"), (snap) => {
+        const el = $("setting_sound");
+        if (!isEditing(el)) el.checked = snap.val() !== "off";
+      });
+      onValue(ref(db, "settings/max_player_count"), (snap) => {
+        const el = $("setting_max_player_count");
+        if (!isEditing(el)) el.value = snap.val() ?? 1000;
+      });
+      onValue(ref(db, "settings/draw_interval"), (snap) => {
+        const el = $("setting_draw_interval");
+        if (!isEditing(el)) el.value = snap.val() ?? 5000;
+      });
+
+      $("setting_sound").addEventListener("change", (e) => {
+        set(ref(db, "settings/sound"), e.target.checked ? "on" : "off");
+      });
+      $("setting_max_player_count").addEventListener("change", (e) => {
+        const value = Math.max(1, parseInt(e.target.value, 10) || 1000);
+        e.target.value = value;
+        set(ref(db, "settings/max_player_count"), value);
+      });
+      $("setting_draw_interval").addEventListener("change", (e) => {
+        const value = Math.max(500, parseInt(e.target.value, 10) || 5000);
+        e.target.value = value;
+        set(ref(db, "settings/draw_interval"), value);
+      });
+    }
+
+    function showConsole(uid) {
+      $("statusLine").style.display = "none";
+      $("authGate").style.display = "none";
+      $("console").style.display = "block";
+      $("uid").textContent = `Signed in as: ${uid}`;
+      watchGameState();
+      watchSettings();
+      for (const action of ACTIONS) {
+        $(`btn_${action}`).addEventListener("click", () => sendAction(action));
+      }
+    }
+
+    function showAuthGate(uid) {
+      $("statusLine").style.display = "none";
+      $("console").style.display = "none";
+      $("authGate").style.display = "block";
+      $("authUid").textContent = uid;
+    }
+
+    async function checkIsAdmin(forceRefresh) {
+      const result = await getIdTokenResult(auth.currentUser, forceRefresh);
+      return result.claims.isAdmin === true;
+    }
+
+    // implementation-plan.md host decision: "write `false` to `admins/<uid>`
+    // ... a person then grants `isAdmin` via the bootstrap script" -- purely a
+    // discoverability aid for whoever's granting access (the real grant is the
+    // custom claim, set independently via the Admin SDK). Only written if the
+    // path doesn't already have a value, so a later real grant never gets
+    // visually clobbered back to `false` by a stale write on reload.
+    async function registerForDiscovery(uid) {
+      const path = ref(db, `admins/${uid}`);
+      const existing = await get(path);
+      if (!existing.exists()) {
+        await set(path, false);
+      }
+    }
+
+    async function refreshAuthState(forceRefresh) {
+      const uid = auth.currentUser.uid;
+      const isAdmin = await checkIsAdmin(forceRefresh);
+      if (isAdmin) {
+        showConsole(uid);
+      } else {
+        showAuthGate(uid);
+      }
+    }
+
+    async function main() {
+      $("recheckBtn").addEventListener("click", () => refreshAuthState(true));
+      try {
+        const credential = await signInAnonymously(auth);
+        await registerForDiscovery(credential.user.uid);
+        await refreshAuthState(false);
+      } catch (err) {
+        $("statusLine").textContent = `Sign-in failed: ${err.message}`;
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>

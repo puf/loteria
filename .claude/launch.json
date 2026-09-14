@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "player-web-preview",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8765", "--directory", "player/build/web"],
+      "port": 8765
+    },
+    {
+      "name": "server-web-preview",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8766", "--directory", "server/build/web"],
+      "port": 8766
+    },
+    {
+      "name": "host-web-preview",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8767", "--directory", "host"],
+      "port": 8767
+    }
+  ]
+}
