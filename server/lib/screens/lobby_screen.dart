@@ -10,9 +10,11 @@ LoteriaCard _cardBySlug(String slug) =>
 
 /// The URL players scan/type to open the player app. This can't be derived
 /// automatically -- the stage and player apps are deployed independently
-/// (e.g. player app on the conference LAN at a different address) -- so
-/// update this constant to match the actual deployment before an event.
-const String kPlayerJoinUrl = 'http://localhost:8765';
+/// -- so update this constant to match the actual deployment before an
+/// event. Currently the live Firebase Hosting deploy (see firebase.json /
+/// implementation-plan.md); switch back to a localhost:8765-style address
+/// only when running the stage app against a local player-app dev server.
+const String kPlayerJoinUrl = 'https://lalotteria.web.app';
 
 /// `game_state == lobby` (spec.md section 3 stage-view requirements):
 /// explanation of the game, join instructions (URL and QR code), and the
