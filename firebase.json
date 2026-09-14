@@ -1,0 +1,11 @@
+{
+  "hosting": {
+    "public": "player/build/web",
+    "cleanUrls": true,
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}

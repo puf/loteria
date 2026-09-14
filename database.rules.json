@@ -78,9 +78,13 @@
     // (matches the client's own `!existing.exists()` guard, enforced here
     // too) and never write `true` (the real grant is always the custom
     // claim, set independently by the bootstrap script, never through
-    // this path).
+    // this path). Also needs its own `.read` override: registerForDiscovery
+    // reads its own entry first (to decide whether to write at all), and a
+    // non-admin has no other read access to `admins/` via the top-level
+    // grant.
     "admins": {
       "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.val() === false"
       }
     }
