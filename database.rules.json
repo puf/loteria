@@ -1,0 +1,71 @@
+{
+  "rules": {
+    // spec.md section 4 "Securing the database": "The host (identified by
+    // their UID) can read/write everything in the database." -- "host"
+    // here means any signed-in UID carrying the `isAdmin` custom claim,
+    // which covers both the stage/admin app and the host/rc.html remote
+    // control (both gate on the same claim -- see
+    // server/tools/grant_admin_claim.mjs and
+    // server/lib/services/auth_service.dart). This top-level grant covers
+    // every path not overridden below: actions/, claim_log/, winner_log/,
+    // settings/, and full read/write of game_state, game, players,
+    // blocked_uids, lobby.
+    ".read": "auth != null && auth.token.isAdmin === true",
+    ".write": "auth != null && auth.token.isAdmin === true",
+
+    // spec.md: "Read the top-level game_state" / "Read the top-level game
+    // object" -- any signed-in player (anonymous auth still populates
+    // `auth`), not just admins.
+    "game_state": {
+      ".read": "auth != null"
+    },
+
+    "game": {
+      ".read": "auth != null",
+
+      // spec.md: "Write their (Firebase Authentication) UID to
+      // game/claiming_uid, when: there is currently no data in that path,
+      // and their UID does not exist under blocked_uids/<uid>, and the
+      // current game_state is drawing" -- matches the client-side
+      // assumption already documented in
+      // player/lib/services/game_repository.dart's writeClaim doc comment.
+      // Only gates the CLAIM write itself; clearing/resolving
+      // claiming_uid is always an admin action, already covered by the
+      // top-level admin grant above.
+      "claiming_uid": {
+        ".write": "auth != null && !data.exists() && newData.val() === auth.uid && !root.child('blocked_uids').child(auth.uid).exists() && root.child('game_state').val() === 'drawing'"
+      }
+    },
+
+    // spec.md: "Read the players/<uid> where uid matches their
+    // (Firebase Authentication) UID" -- a player never needs to read
+    // (or write) anyone else's player data, or write their own; only the
+    // admin app deals tablas (dealTablaToPlayer).
+    "players": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    // spec.md: "Read blocked_uids/<uid> where uid matches their (Firebase
+    // Authentication) UID" -- so a blocked player's own client can at
+    // least detect the block; only the admin app ever blocks/unblocks.
+    "blocked_uids": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    // spec.md: "Write true to lobby/<uid> where uid matches their
+    // (Firebase Authentication) UID" -- this is the presence write
+    // (player/lib/services/presence_service.dart's markPresent, plus its
+    // onDisconnect().remove() -- deletes aren't subject to .validate, so
+    // that cleanup isn't blocked by the true-only check below).
+    "lobby": {
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.val() === true"
+      }
+    }
+  }
+}
