@@ -437,6 +437,14 @@ class GameRepository {
     return _database.ref('blocked_uids/$uid').set(true);
   }
 
+  /// Host-triggered manual reset of `blocked_uids` (implementation-plan.md
+  /// parking-lot item) -- independent of `game_state`/[abortToLobby], which
+  /// already clears the blocklist every round automatically; this just lets
+  /// the host also do it mid-round, e.g. after resolving a mistaken block.
+  Future<void> clearBlockedUids() {
+    return _database.ref('blocked_uids').remove();
+  }
+
   Future<void> clearClaimingUid() {
     return _database.ref('game/claiming_uid').remove();
   }

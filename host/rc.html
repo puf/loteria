@@ -138,6 +138,7 @@
       <div class="row"><span class="label">game_state</span><span class="value" id="gameState">-</span></div>
       <div class="row"><span class="label">Lobby</span><span class="value" id="lobbyCount">-</span></div>
       <div class="row"><span class="label">Dealt</span><span class="value" id="dealtCount">-</span></div>
+      <div class="row"><span class="label">Blocked</span><span class="value" id="blockedCount">-</span></div>
       <div class="row"><span class="label">Claimant</span><span class="value" id="claimant">-</span></div>
       <div class="row"><span class="label">Draw count</span><span class="value" id="drawCount">-</span></div>
       <div class="row"><span class="label">Pattern</span><span class="value" id="pattern">-</span></div>
@@ -150,7 +151,8 @@
       <button class="action" id="btn_pause">pause</button>
       <button class="action" id="btn_resume">resume</button>
       <button class="action" id="btn_check">check</button>
-      <button class="action wide" id="btn_resolve">resolve</button>
+      <button class="action" id="btn_resolve">resolve</button>
+      <button class="action" id="btn_clear_blocked">clear_blocked</button>
     </div>
 
     <div class="panel">
@@ -219,16 +221,19 @@
 
     const $ = (id) => document.getElementById(id);
 
-    const ACTIONS = ["next_game", "start_drawing", "pause", "resume", "check", "resolve"];
+    const ACTIONS = ["next_game", "start_drawing", "pause", "resume", "check", "resolve", "clear_blocked"];
 
-    // Which actions are valid to send in each `game_state` -- mirrors
-    // implementation-plan.md's "Remote control action contract" /
-    // admin_engine.dart's own validation (the admin process re-validates
-    // regardless; this is just so the host isn't offered obviously-wrong
-    // buttons). `next_game` is valid in every state: `AdminEngine` treats it as
-    // "start the round" from `lobby` and as a universal "abort back to lobby"
-    // bail-out from anywhere else.
-    function isActionEnabled(action, gameState) {
+    // Which actions are valid right now -- mirrors implementation-plan.md's
+    // "Remote control action contract" / admin_engine.dart's own validation
+    // (the admin process re-validates regardless; this is just so the host
+    // isn't offered obviously-wrong buttons). `next_game` is valid in every
+    // state: `AdminEngine` treats it as "start the round" from `lobby` and
+    // as a universal "abort back to lobby" bail-out from anywhere else.
+    // `clear_blocked` isn't a `game_state` transition at all (unlike every
+    // other action here) -- `blocked_uids` is a standing list the host can
+    // reset whenever it's non-empty, regardless of what round is in
+    // progress.
+    function isActionEnabled(action, gameState, blockedCount) {
       switch (action) {
         case "next_game":
           return true;
@@ -242,6 +247,8 @@
           return gameState === "claiming";
         case "resolve":
           return gameState === "checking";
+        case "clear_blocked":
+          return blockedCount > 0;
         default:
           return false;
       }
@@ -260,8 +267,10 @@
     };
 
     // Tracked so `sendAction` can decide whether `next_game` would abort an
-    // in-progress round (anything but lobby/celebrate) and needs confirming.
+    // in-progress round (anything but lobby/celebrate) and needs confirming,
+    // and so `renderActionButtons` can be re-run whenever either changes.
     let currentGameState = "lobby";
+    let currentBlockedCount = 0;
 
     function sendAction(name) {
       if (name === "next_game" && currentGameState !== "lobby" && currentGameState !== "celebrate") {
@@ -273,9 +282,9 @@
       push(ref(db, "actions"), name);
     }
 
-    function renderActionButtons(gameState) {
+    function renderActionButtons() {
       for (const action of ACTIONS) {
-        $(`btn_${action}`).disabled = !isActionEnabled(action, gameState);
+        $(`btn_${action}`).disabled = !isActionEnabled(action, currentGameState, currentBlockedCount);
       }
     }
 
@@ -285,7 +294,7 @@
         currentGameState = state;
         $("gameState").textContent = state;
         $("nextStep").textContent = NEXT_STEP[state] ?? "";
-        renderActionButtons(state);
+        renderActionButtons();
       });
 
       onValue(ref(db, "game"), (snap) => {
@@ -295,6 +304,13 @@
         $("pattern").textContent = game.winning_pattern
           ? String(game.winning_pattern).replaceAll("_", " ")
           : "-";
+      });
+
+      onValue(ref(db, "blocked_uids"), (snap) => {
+        const blocked = snap.val();
+        currentBlockedCount = blocked ? Object.keys(blocked).length : 0;
+        $("blockedCount").textContent = currentBlockedCount;
+        renderActionButtons();
       });
 
       onValue(ref(db, "lobby"), (snap) => {

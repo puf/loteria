@@ -29,16 +29,16 @@
 
 ## Open Questions
 
-* Host/stage recovery behavior after reload or restart: define the minimum acceptable recovery behavior for later host/stage implementation.
-* Whether the stage app needs a dedicated recovery/control surface beyond the host app.
-* Parking-lot feature ideas to revisit later: host clear-blocklist command, explicit player feedback when a `loteria` write is rejected, and other non-v1 polish items.
+* [RESOLVED, 2026-09-14] Host/stage recovery behavior after reload or restart: every engine (`DrawLoopEngine`, `StageStateController`, etc.) resumes purely from live DB state (`game_state` + `draw_count`), so a reload mid-round just re-syncs -- no separate recovery logic needed.
+* [RESOLVED, 2026-09-14] Whether the stage app needs a dedicated recovery/control surface beyond the host app: no -- the stage app is a pure read-only projection of DB state; the host app is the only control surface, by design.
+* Parking-lot feature ideas to revisit later: host clear-blocklist command (in progress, 2026-09-14), explicit player feedback when a `loteria` write is rejected ([DECIDED against for v1] -- see `player/lib/services/game_repository.dart`'s `writeClaim` doc comment: a rejection is expected/legitimate and deliberately not surfaced as an error, to keep the UI stable), and other non-v1 polish items.
 
 ## Deferred / Follow-up Items
 
-* Define the exact draw/pause fields in `game` before coding begins.
-* Finalize player reconnect behavior by game state once the Player App scaffold is underway.
-* Revisit host/stage recovery and control-surface questions later in the host/stage work.
-* Keep a parking-lot list for non-v1 polish items, such as clearing `blocked_uids` via host command and explicit player feedback when a `loteria` write is rejected.
+* [RESOLVED, 2026-09-14] Define the exact draw/pause fields in `game` before coding begins -- `game/draw_count`, `game/game_id`, `game/claiming_uid`, `game/winning_pattern` are all implemented and in active use.
+* [RESOLVED, 2026-09-14] Finalize player reconnect behavior by game state once the Player App scaffold is underway -- `PresenceService` writes `lobby/<uid>` on connect with an `onDisconnect` removal handler, and all player screens are a live projection of DB state, so reconnect is handled by the same architecture as the stage app's recovery.
+* [RESOLVED, 2026-09-14] Revisit host/stage recovery and control-surface questions later in the host/stage work -- see Open Questions above.
+* Keep a parking-lot list for non-v1 polish items, such as clearing `blocked_uids` via host command (in progress, 2026-09-14) and explicit player feedback when a `loteria` write is rejected (decided against for v1, see above).
 
 ## Player App Scaffold (v1)
 

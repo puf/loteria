@@ -92,6 +92,8 @@ class AdminEngine {
       await _handleCheck();
     } else if (name == 'resolve') {
       await _handleResolve();
+    } else if (name == 'clear_blocked') {
+      await _handleClearBlocked();
     }
     await _repository.deleteAction(event.key);
   }
@@ -231,6 +233,14 @@ class AdminEngine {
     } else {
       await _repository.resolveCheater();
     }
+  }
+
+  /// Manual `blocked_uids` reset (implementation-plan.md parking-lot item),
+  /// independent of `game_state` -- unlike every other action here, this
+  /// isn't a state-machine transition, just a standing list the host can
+  /// clear whenever, e.g. after resolving a mistaken block mid-round.
+  Future<void> _handleClearBlocked() async {
+    await _repository.clearBlockedUids();
   }
 
   void dispose() {
