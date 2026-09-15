@@ -33,3 +33,23 @@ Pure combinatorics, no simulation needed -- exact via `math.comb`-style binomial
 ## Caveat to flag in the writeup
 
 This computes the *theoretical earliest possible* win -- the draw count at which a valid claim first exists, not when a real player actually notices and taps ¡Lotería!. Real games will run a bit longer than these numbers due to human reaction time. Still the right thing to compute: it tells us the *shape* of the curve (how much N matters) and whether the 5s/draw default pace risks making small-N games dominated by reaction time rather than draw progress, or large-N games take a while regardless.
+
+## Results (executed 2026-09-14)
+
+Median draw count for the first valid win, with (P10-P90) spread in parens, computed exactly via the inclusion-exclusion approach above (54-card deck, out of a possible 54 draws):
+
+| N players | horizontal | vertical | diagonal | four corners | el pozo | **random pattern (avg)** |
+|---:|---:|---:|---:|---:|---:|---:|
+| 5   | 24 (16-32) | 24 (16-32) | 29 (19-37) | 34 (22-43) | 21 (14-28) | **25 (16-33)** |
+| 10  | 21 (14-27) | 21 (14-27) | 25 (16-32) | 29 (19-37) | 18 (12-24) | **21 (14-28)** |
+| 25  | 17 (12-22) | 17 (12-22) | 20 (13-26) | 23 (15-31) | 15 (10-19) | **17 (12-23)** |
+| 50  | 15 (10-19) | 15 (10-19) | 17 (12-22) | 20 (13-26) | 13 (9-16)  | **15 (10-19)** |
+| 100 | 13 (9-16)  | 13 (9-16)  | 15 (10-19) | 17 (12-22) | 11 (8-14)  | **13 (9-17)** |
+
+(Horizontal and vertical are identical, as expected -- both are 4 disjoint groups of 4, just a different grouping of the same 16 cells, so they have the same combinatorial structure.)
+
+Takeaways:
+- **Pattern difficulty spread is bigger than player-count effect at the extremes**: at N=5, the easiest pattern (El Pozo, 21 draws) and hardest (four corners, 34 draws) differ by more than the entire N=5-to-N=100 range for any single pattern. Which pattern gets picked matters more than how many people showed up.
+- **Diminishing returns from more players**: going from 5 to 100 players only pulls the average-case median in from 25 to 13 draws -- roughly halves, not divides by 20, because winning is still gated by the shared draw order, not by player count directly (more tablas = more independent shots at the same shrinking pool of "already drawn" cards).
+- **At the default 5s/draw pace**, a typical (random-pattern) round resolves in about 25 draws x 5s ≈ **2 minutes** at N=5, down to about 13 draws x 5s ≈ **1 minute** at N=100. Four Corners rounds specifically run about 30-45% longer than the average.
+

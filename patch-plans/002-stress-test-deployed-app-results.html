@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stress test results -- lalotteria.web.app</title>
+<style>
+  :root {
+    --bg: #faf7f2;
+    --card: #ffffff;
+    --text: #2a1f14;
+    --muted: #7a6a58;
+    --border: #e4dbcd;
+    --accent: #c0392b;
+    --ok: #1e7d3c;
+    --ok-bg: #e8f6ec;
+    --warn: #a5620a;
+    --warn-bg: #fdf1de;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17130f;
+      --card: #221c16;
+      --text: #f1e9dd;
+      --muted: #b3a08a;
+      --border: #3a3128;
+      --accent: #e8695c;
+      --ok: #5fd188;
+      --ok-bg: #16301f;
+      --warn: #e0a94f;
+      --warn-bg: #3a2c10;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 40px 20px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); margin-bottom: 28px; font-size: 0.95rem; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  h2 { font-size: 1.1rem; margin-top: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+  .status-ok {
+    display: inline-block; padding: 2px 10px; border-radius: 999px;
+    background: var(--ok-bg); color: var(--ok); font-size: 0.8rem; font-weight: 600;
+  }
+  .status-warn {
+    display: inline-block; padding: 2px 10px; border-radius: 999px;
+    background: var(--warn-bg); color: var(--warn); font-size: 0.8rem; font-weight: 600;
+  }
+  .finding {
+    background: var(--warn-bg);
+    border: 1px solid var(--warn);
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-size: 0.92rem;
+  }
+  .finding strong { color: var(--warn); }
+  .scroll-x { overflow-x: auto; }
+  code { background: var(--border); padding: 1px 6px; border-radius: 4px; font-size: 0.88em; }
+  .meta { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Stress test: deployed app under player load</h1>
+  <p class="subtitle">lalotteria.web.app -- executed 2026-09-14 via <code>server/tools/stress_test.mjs</code> -- see <a href="002-stress-test-deployed-app.md">002-stress-test-deployed-app.md</a> for the plan</p>
+
+  <div class="card">
+    <h2>Results by player count</h2>
+    <div class="scroll-x">
+      <table>
+        <thead>
+          <tr>
+            <th>N players</th>
+            <th class="num">Join time</th>
+            <th class="num">Dealing time</th>
+            <th class="num">Draw intervals (3 samples)</th>
+            <th class="num">Claim &rarr; celebrate</th>
+            <th>Errors</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>5</td>
+            <td class="num">1.96s</td>
+            <td class="num">8.53s</td>
+            <td class="num">0.44s, 5.24s, 5.06s</td>
+            <td class="num">4.60s</td>
+            <td>0</td>
+            <td><span class="status-ok">clean</span></td>
+          </tr>
+          <tr>
+            <td>10</td>
+            <td class="num">3.81s</td>
+            <td class="num">10.91s</td>
+            <td class="num">0.43s, 5.26s, 4.93s</td>
+            <td class="num">4.22s</td>
+            <td>0</td>
+            <td><span class="status-ok">clean</span></td>
+          </tr>
+          <tr>
+            <td>25</td>
+            <td class="num">9.20s</td>
+            <td class="num">11.70s</td>
+            <td class="num">0.44s, 5.27s, 5.04s</td>
+            <td class="num">4.63s</td>
+            <td>0</td>
+            <td><span class="status-ok">clean</span></td>
+          </tr>
+          <tr>
+            <td>50</td>
+            <td class="num">17.57s</td>
+            <td class="num">12.95s</td>
+            <td class="num">0.43s, 5.36s, 4.85s</td>
+            <td class="num">4.93s</td>
+            <td>0</td>
+            <td><span class="status-ok">clean</span></td>
+          </tr>
+          <tr>
+            <td>90</td>
+            <td class="num">&mdash;</td>
+            <td class="num">&mdash;</td>
+            <td class="num">&mdash;</td>
+            <td class="num">&mdash;</td>
+            <td>rate-limited at 9/90 joins</td>
+            <td><span class="status-warn">see below</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="meta">"Join time" is all N virtual players signing in + writing lobby presence. "Dealing time" is <code>next_game</code> click to the last tabla dealt (admin engine's own pacing targets ~10-15s regardless of N -- holds up here). Draw interval samples confirm the 5s cadence stays steady under load (first sample is fast by design -- no wait before the very first draw).</p>
+  </div>
+
+  <div class="card">
+    <h2>N=90: hit a real external limit, not an app bug</h2>
+    <div class="finding">
+      <p><strong>Google's Identity Toolkit rate-limits anonymous sign-ups from a single IP</strong> (<code>TOO_MANY_ATTEMPTS_TRY_LATER</code>). This test session had already created ~90 anonymous accounts across the 5/10/25/50 tiers plus earlier verification testing, and the N=90 run tripped the limit after only 9 of 90 sign-ups.</p>
+      <p>Frank confirmed N=50's clean result is sufficient -- no retry was pushed through to force a clean N=75/90 data point.</p>
+      <p><strong>Worth knowing for a real event</strong>: many phones joining in quick succession from behind the same conference WiFi NAT could plausibly trip this same Google-side limit, independent of anything in this app or the Firebase Spark plan's 100-connection cap. This test demonstrated the app's own scaling is fine -- it did not demonstrate sign-up-burst behavior from a shared IP, which is worth a quick real-device check closer to an actual event.</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

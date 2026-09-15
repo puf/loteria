@@ -1,6 +1,6 @@
 # Stress test the deployed app
 
-Not yet executed -- Frank wants a few manual test runs on the deployed version first.
+Executed 2026-09-14. Harness: `server/tools/stress_test.mjs`. Full results: [002-stress-test-deployed-app-results.html](002-stress-test-deployed-app-results.html).
 
 ## Goal
 
@@ -39,3 +39,13 @@ Run the full flow (lobby -> next_game -> dealing -> start_drawing -> drawing -> 
 ## Open question for Frank
 
 Do you want the "visual sanity check" tabs to include a real phone (not just the Browser pane), or is the Browser pane's view sufficient for this pass?
+
+> puf: browser pane is plenty good 👍
+
+## Results
+
+N=5, 10, 25, and 50 each ran the full flow (join -> next_game -> dealing -> start_drawing -> drawing -> claim -> check -> resolve -> celebrate -> next_game) against the live project with **zero errors** at every tier. Dealing stayed within the admin engine's ~10-15s target regardless of N, as designed. Draw cadence held steady at the configured 5s interval (with a fast first sample -- that's `_handleNextGame`'s existing zero-wait-before-first-draw behavior, not a bug). Full numbers in the linked HTML report.
+
+**N=90 didn't complete** -- not an app bug, but a real external constraint worth knowing about: Google's Identity Toolkit rate-limits anonymous sign-ups from a single IP (`TOO_MANY_ATTEMPTS_TRY_LATER`), and this test session's cumulative sign-up count (90 from the earlier tiers, plus dozens more from verification testing earlier in the day) tripped it a few players into the N=90 run. Frank confirmed N=50 is sufficient evidence -- did not retry at a lower count to chase a clean N=75/90 data point.
+
+**Real-world implication worth flagging**: a live event onboarding many phones in quick succession from behind the same conference-WiFi NAT could plausibly hit this same Google-side limit, independent of anything in this app or the Spark plan's connection cap. Worth a quick real-device test closer to an actual event (a handful of phones joining in a tight window) rather than assuming the current data fully covers it -- this stress test only demonstrated the *app's* scaling, not sign-up-burst behavior from a shared IP.
