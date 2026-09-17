@@ -32,8 +32,15 @@
       // Only gates the CLAIM write itself; clearing/resolving
       // claiming_uid is always an admin action, already covered by the
       // top-level admin grant above.
+      //
+      // Extra condition beyond spec.md's original list: the claimant must
+      // actually have a tabla in the current game. `players/<uid>` only
+      // ever exists once the admin app has dealt that uid a tabla
+      // (dealTablaToPlayer, see the `players` rule below) -- so a spectator
+      // who joined the lobby late (after dealing) or a stale/reused session
+      // from a previous round can't claim a win they were never dealt into.
       "claiming_uid": {
-        ".write": "auth != null && !data.exists() && newData.val() === auth.uid && !root.child('blocked_uids').child(auth.uid).exists() && root.child('game_state').val() === 'drawing'"
+        ".write": "auth != null && !data.exists() && newData.val() === auth.uid && !root.child('blocked_uids').child(auth.uid).exists() && root.child('game_state').val() === 'drawing' && root.child('players').child(auth.uid).exists()"
       }
     },
 
